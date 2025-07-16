@@ -111,6 +111,32 @@ async function saveDailyEntryToFirestore(
   }
 }
 
+// Spinner component
+const Spinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <svg
+      className="animate-spin h-12 w-12 text-purple-600"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v8z"
+      ></path>
+    </svg>
+  </div>
+);
+
 function App() {
   const [currentView, setCurrentView] = useState<"landing" | "auth" | "app">(
     "landing"
@@ -148,6 +174,7 @@ function App() {
   const [expandedHistoryEntries, setExpandedHistoryEntries] = useState<
     Record<string, boolean>
   >({});
+  const [loadingData, setLoadingData] = useState(false);
 
   const today = new Date().toDateString();
   const todayEntry = dailyEntries.find(
@@ -169,6 +196,7 @@ function App() {
   useEffect(() => {
     async function fetchFirestoreData() {
       if (user) {
+        setLoadingData(true);
         // Fetch goals
         const goalsQuery = query(
           collection(db, "goals"),
@@ -195,6 +223,7 @@ function App() {
           ...docSnap.data(),
         })) as DailyEntry[];
         setDailyEntries(fetchedEntries);
+        setLoadingData(false);
       }
     }
     fetchFirestoreData();
@@ -451,6 +480,11 @@ function App() {
         onAuthSuccess={() => setCurrentView("app")}
       />
     );
+  }
+
+  // Show spinner while loading data after login
+  if (currentView === "app" && loadingData) {
+    return <Spinner />;
   }
 
   const renderTodayView = () => (
