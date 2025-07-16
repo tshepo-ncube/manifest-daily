@@ -19,8 +19,6 @@ import LandingPage from "./components/LandingPage";
 import AuthForm from "./components/AuthForm";
 import CelebrationModal from "./components/CelebrationModal";
 import { db, analytics as rawAnalytics, logEvent } from "./lib/firebase";
-import type { Analytics } from "firebase/analytics";
-const analytics: Analytics | undefined = rawAnalytics;
 import {
   collection,
   addDoc,
@@ -33,6 +31,8 @@ import {
   orderBy,
   updateDoc,
 } from "firebase/firestore";
+import type { Analytics } from "firebase/analytics";
+const analytics: Analytics | undefined = rawAnalytics;
 
 interface Goal {
   id: string;
@@ -228,10 +228,22 @@ function App() {
           where("userId", "==", user.id)
         );
         const entriesSnap = await getDocs(entriesQuery);
-        const fetchedEntries = entriesSnap.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as DailyEntry[];
+        const fetchedEntries = entriesSnap.docs.map((docSnap) => {
+          const data = docSnap.data();
+          // Defensive: ensure completed object is always present and correct
+          const completed = {
+            intention: data.completed?.intention || false,
+            visualization: data.completed?.visualization || false,
+            gratitude: data.completed?.gratitude || false,
+            reflection: data.completed?.reflection || false,
+            affirmations: data.completed?.affirmations || false,
+          };
+          return {
+            id: docSnap.id,
+            ...data,
+            completed,
+          };
+        }) as DailyEntry[];
         setDailyEntries(fetchedEntries);
         setLoadingData(false);
       }
@@ -406,7 +418,21 @@ function App() {
     );
 
     if (existingEntry) {
-      const updatedEntry = { ...existingEntry, [field]: value };
+      // Only update the relevant field and completed flag
+      let updatedEntry = { ...existingEntry, [field]: value };
+      if (field in existingEntry.completed) {
+        updatedEntry.completed = {
+          ...existingEntry.completed,
+          [field]: Boolean(
+            value &&
+              (typeof value === "string"
+                ? value.trim()
+                : value.length
+                ? value.some((v: any) => v)
+                : value)
+          ),
+        };
+      }
       const updatedEntries = dailyEntries.map((entry) =>
         entry.id === existingEntry.id ? updatedEntry : entry
       );
@@ -437,6 +463,24 @@ function App() {
       }
     } else {
       const user = JSON.parse(localStorage.getItem("manifesting-user") || "{}");
+      // Only set completed for the field being filled
+      const completed = {
+        intention: false,
+        visualization: false,
+        gratitude: false,
+        reflection: false,
+        affirmations: false,
+      };
+      if (field in completed) {
+        completed[field] = Boolean(
+          value &&
+            (typeof value === "string"
+              ? value.trim()
+              : value.length
+              ? value.some((v: any) => v)
+              : value)
+        );
+      }
       const newEntry: DailyEntry = {
         id: Date.now().toString(),
         goalId: selectedGoalId,
@@ -447,13 +491,7 @@ function App() {
         wins: ["", "", ""],
         lesson: "",
         affirmations: DEFAULT_AFFIRMATIONS.slice(0, 3),
-        completed: {
-          intention: false,
-          visualization: false,
-          gratitude: false,
-          reflection: false,
-          affirmations: false,
-        },
+        completed,
         [field]: value,
         createdAt: new Date().toISOString(),
       };
@@ -464,7 +502,7 @@ function App() {
           goal_id: selectedGoalId,
           field,
         });
-      if (field === "completed" && Object.values(value).every(Boolean)) {
+      if (field === "completed" && Object.values(completed).every(Boolean)) {
         const withCompletedAt = {
           ...newEntry,
           completedAt: new Date().toISOString(),
