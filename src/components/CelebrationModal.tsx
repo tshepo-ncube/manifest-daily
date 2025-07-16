@@ -153,9 +153,9 @@ export default function CelebrationModal({
           </div>
 
           {/* Celebration Text */}
-          <h2 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 animate-fade-in bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
+          {/* <h2 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 animate-fade-in bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
             🎉 AMAZING! 🎉
-          </h2>
+          </h2> */}
           <p className="text-lg sm:text-xl mb-1 sm:mb-2 font-semibold animate-slide-up">
             You're a Manifestation Master!
           </p>
