@@ -193,7 +193,13 @@ const VoiceNote: React.FC<{
       setState("recording");
       setDuration(0);
       timerRef.current = setInterval(() => {
-        setDuration((prev) => prev + 0.1);
+        setDuration((prev) => {
+          if (prev + 0.1 >= 90) {
+            stopRecording();
+            return 90;
+          }
+          return prev + 0.1;
+        });
       }, 100);
       const animateWaveform = () => {
         generateWaveform();
@@ -1345,7 +1351,7 @@ function App() {
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Say these to yourself at least 5 times (edit as needed):
+                  Calmy say these to yourself at least 5 times today
                 </p>
                 <div className="space-y-3">
                   {(
@@ -1368,7 +1374,8 @@ function App() {
                       }}
                       rows={2}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base resize-none"
-                      disabled={entry?.completed.affirmations}
+                      // disabled={entry?.completed.affirmations}
+                      disabled={true}
                     />
                   ))}
                 </div>
