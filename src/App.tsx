@@ -718,7 +718,7 @@ function App() {
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Your personalized affirmations (edit as needed):
+                  Say these to yourself at least 5 times (edit as needed):
                 </p>
                 <div className="space-y-3">
                   {(
