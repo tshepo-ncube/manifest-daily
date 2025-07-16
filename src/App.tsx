@@ -1488,7 +1488,7 @@ function App() {
             {[
               { id: "today", label: "Today's Practice", icon: Sun },
               { id: "goals", label: "Goals", icon: Target },
-              { id: "history", label: "History", icon: TrendingUp },
+              { id: "progress", label: "Progress", icon: TrendingUp },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -1518,7 +1518,7 @@ function App() {
             {[
               { id: "today", label: "Today's Practice", icon: Sun },
               { id: "goals", label: "Goals", icon: Target },
-              { id: "history", label: "History", icon: TrendingUp },
+              { id: "progress", label: "Progress", icon: TrendingUp },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -1544,7 +1544,7 @@ function App() {
       <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
         {activeTab === "today" && renderTodayView()}
         {activeTab === "goals" && renderGoals()}
-        {activeTab === "history" && renderHistory()}
+        {activeTab === "progress" && renderHistory()}
       </main>
 
       {/* Celebration Modal */}
