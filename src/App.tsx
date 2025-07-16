@@ -1077,8 +1077,8 @@ function App() {
             </div>
           ))}
       </div>
-      {/* FAB for adding new goal, only if user has more than one goal */}
-      {goals.length > 1 && (
+      {/* FAB for adding new goal, only if user has at least 1 goal */}
+      {goals.length >= 1 && (
         <button
           onClick={() => setShowAddGoalModal(true)}
           className="fixed bottom-16 right-12 z-50 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg w-16 h-16 flex items-center justify-center text-3xl focus:outline-none focus:ring-4 focus:ring-purple-300"
