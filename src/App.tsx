@@ -1402,7 +1402,7 @@ function App() {
                       </svg>
                     </span>
                     <h3 className="text-lg sm:text-xl font-semibold text-indigo-800">
-                      6. Reflect on your day
+                      6. Reflect on your goal
                     </h3>
                   </div>
                 </div>
