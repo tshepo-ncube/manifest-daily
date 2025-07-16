@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Target,
@@ -32,6 +32,12 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import type { Analytics } from "firebase/analytics";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadString,
+  getDownloadURL,
+} from "firebase/storage";
 const analytics: Analytics | undefined = rawAnalytics;
 
 interface Goal {
@@ -185,6 +191,37 @@ function App() {
   const [loadingData, setLoadingData] = useState(false);
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  // Support form state
+  const [supportTitle, setSupportTitle] = useState("");
+  const [supportDescription, setSupportDescription] = useState("");
+  const [supportImage, setSupportImage] = useState<string | null>(null);
+  const [supportRating, setSupportRating] = useState<number>(0);
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop handlers for image upload
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSupportImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const handleImageAreaClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
 
   const today = new Date().toDateString();
   const todayEntry = dailyEntries.find(
@@ -546,6 +583,57 @@ function App() {
   };
 
   const selectedGoal = goals.find((g) => g.id === selectedGoalId);
+
+  // Handle image upload
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSupportImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle support form submit
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !supportTitle.trim() ||
+      !supportDescription.trim() ||
+      supportRating === 0
+    )
+      return;
+    setSupportSubmitting(true);
+    try {
+      const user = JSON.parse(localStorage.getItem("manifesting-user") || "{}");
+      let imageUrl = null;
+      if (supportImage) {
+        // Optionally upload to Firebase Storage in future, for now store as base64
+        imageUrl = supportImage;
+      }
+      await addDoc(collection(db, "supportTickets"), {
+        userId: user.id || null,
+        email: user.email || null,
+        title: supportTitle,
+        description: supportDescription,
+        rating: supportRating,
+        image: imageUrl,
+        createdAt: Timestamp.fromDate(new Date()),
+      });
+      setSupportSuccess(true);
+      setSupportTitle("");
+      setSupportDescription("");
+      setSupportImage(null);
+      setSupportRating(0);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      alert("Failed to submit ticket. Please try again.");
+    } finally {
+      setSupportSubmitting(false);
+    }
+  };
 
   if (currentView === "landing") {
     return <LandingPage onGetStarted={() => setCurrentView("auth")} />;
@@ -1447,6 +1535,130 @@ function App() {
     );
   };
 
+  // Support view
+  const renderSupport = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <h2 className="text-2xl font-bold mb-4 text-purple-700">
+        Support & Feedback
+      </h2>
+      <p className="text-gray-600 mb-4">
+        Submit a ticket, rate the app, or upload a screenshot/image.
+      </p>
+      {supportSuccess ? (
+        <div className="bg-green-100 border border-green-300 text-green-800 rounded-lg px-6 py-4 mb-6 text-center">
+          Thank you for your feedback! Your ticket has been submitted. 💜
+          <button
+            className="block mt-4 text-purple-700 underline"
+            onClick={() => setSupportSuccess(false)}
+          >
+            Submit another
+          </button>
+        </div>
+      ) : (
+        <form
+          className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-purple-100 flex flex-col gap-4"
+          onSubmit={handleSupportSubmit}
+        >
+          <div>
+            <label className="block text-sm font-medium text-purple-800 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
+              value={supportTitle}
+              onChange={(e) => setSupportTitle(e.target.value)}
+              required
+              maxLength={80}
+              placeholder="Short summary (e.g., 'Bug in Progress tab')"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-purple-800 mb-1">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base resize-none"
+              value={supportDescription}
+              onChange={(e) => setSupportDescription(e.target.value)}
+              required
+              rows={4}
+              placeholder="Describe your issue, feedback, or suggestion in detail..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-purple-800 mb-1">
+              Screenshot/Image (optional)
+            </label>
+            <div
+              className="w-full flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-lg p-4 cursor-pointer hover:border-purple-500 transition-colors bg-purple-50/30 text-purple-700 text-center"
+              onClick={handleImageAreaClick}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              tabIndex={0}
+              role="button"
+              aria-label="Upload image by clicking or dragging"
+            >
+              {supportImage ? (
+                <img
+                  src={supportImage}
+                  alt="Preview"
+                  className="max-h-32 rounded-lg border border-gray-200 mb-2"
+                />
+              ) : (
+                <>
+                  <span className="text-3xl mb-2">🖼️</span>
+                  <p className="text-sm">
+                    Drag & drop an image here, or{" "}
+                    <span className="underline">click to select</span>
+                  </p>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                className="hidden"
+                tabIndex={-1}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-purple-800 mb-1">
+              Rate the us <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2 text-2xl">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  type="button"
+                  key={star}
+                  className={star <= supportRating ? "" : "opacity-40"}
+                  onClick={() => setSupportRating(star)}
+                  aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                >
+                  {star <= supportRating ? "⭐" : "☆"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-60"
+            disabled={
+              supportSubmitting ||
+              !supportTitle.trim() ||
+              !supportDescription.trim() ||
+              supportRating === 0
+            }
+          >
+            {supportSubmitting ? "Submitting..." : "Submit Ticket"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       {/* Header */}
@@ -1489,6 +1701,7 @@ function App() {
               { id: "today", label: "Today's Practice", icon: Sun },
               { id: "goals", label: "Goals", icon: Target },
               { id: "progress", label: "Progress", icon: TrendingUp },
+              { id: "support", label: "Support", icon: Heart },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -1519,6 +1732,7 @@ function App() {
               { id: "today", label: "Today's Practice", icon: Sun },
               { id: "goals", label: "Goals", icon: Target },
               { id: "progress", label: "Progress", icon: TrendingUp },
+              { id: "support", label: "Support", icon: Heart },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -1545,6 +1759,7 @@ function App() {
         {activeTab === "today" && renderTodayView()}
         {activeTab === "goals" && renderGoals()}
         {activeTab === "progress" && renderHistory()}
+        {activeTab === "support" && renderSupport()}
       </main>
 
       {/* Celebration Modal */}
