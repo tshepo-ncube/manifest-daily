@@ -18,7 +18,7 @@ import {
 import LandingPage from "./components/LandingPage";
 import AuthForm from "./components/AuthForm";
 import CelebrationModal from "./components/CelebrationModal";
-import { db } from "./lib/firebase";
+import { db, analytics, logEvent } from "./lib/firebase";
 import {
   collection,
   addDoc,
@@ -161,6 +161,7 @@ function App() {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
       setCurrentView("app");
+      if (analytics) logEvent(analytics, "login", { method: "localStorage" });
     }
   }, []);
 
@@ -233,6 +234,7 @@ function App() {
   }, [todayEntry, selectedGoalId, celebratedGoals, today]);
 
   const handleSignOut = async () => {
+    if (analytics) logEvent(analytics, "logout");
     localStorage.removeItem("manifesting-user");
     setUser(null);
     setCurrentView("landing");
@@ -252,6 +254,8 @@ function App() {
       setGoals([...goals, goal]);
       if (!selectedGoalId) setSelectedGoalId(goal.id);
       setNewGoal({ title: "", description: "", endDate: "" });
+      if (analytics)
+        logEvent(analytics, "create_goal", { goal_title: goal.title });
       // Add to Firestore
       try {
         await addDoc(collection(db, "goals"), {
@@ -286,6 +290,8 @@ function App() {
     };
     setGoals(goals.map((g) => (g.id === editingGoal.id ? updatedGoal : g)));
     setEditingGoal(null);
+    if (analytics)
+      logEvent(analytics, "edit_goal", { goal_id: editingGoal.id });
     // Update in Firestore
     try {
       await updateDoc(doc(db, "goals", editingGoal.id), {
@@ -308,6 +314,7 @@ function App() {
     setGoals(
       goals.map((g) => (g.id === goal.id ? { ...g, active: false } : g))
     );
+    if (analytics) logEvent(analytics, "delete_goal", { goal_id: goal.id });
     // Soft delete in Firestore
     try {
       await updateDoc(doc(db, "goals", goal.id), { active: false });
@@ -337,6 +344,11 @@ function App() {
       setDailyEntries(updatedEntries);
       // Save step immediately (partial update)
       saveDailyEntryToFirestore(updatedEntry, true);
+      if (analytics)
+        logEvent(analytics, "update_daily_entry", {
+          goal_id: selectedGoalId,
+          field,
+        });
       // If all steps completed, add completedAt and save
       if (Object.values(updatedEntry.completed).every(Boolean)) {
         const withCompletedAt = {
@@ -349,6 +361,10 @@ function App() {
           )
         );
         saveDailyEntryToFirestore(withCompletedAt);
+        if (analytics)
+          logEvent(analytics, "complete_daily_entry", {
+            goal_id: selectedGoalId,
+          });
       }
     } else {
       const user = JSON.parse(localStorage.getItem("manifesting-user") || "{}");
@@ -374,6 +390,11 @@ function App() {
       };
       setDailyEntries([...dailyEntries, newEntry]);
       saveDailyEntryToFirestore(newEntry, true);
+      if (analytics)
+        logEvent(analytics, "create_daily_entry", {
+          goal_id: selectedGoalId,
+          field,
+        });
       if (field === "completed" && Object.values(value).every(Boolean)) {
         const withCompletedAt = {
           ...newEntry,
@@ -385,6 +406,10 @@ function App() {
           )
         );
         saveDailyEntryToFirestore(withCompletedAt);
+        if (analytics)
+          logEvent(analytics, "complete_daily_entry", {
+            goal_id: selectedGoalId,
+          });
       }
     }
   };
@@ -408,6 +433,8 @@ function App() {
       utterance.rate = 0.7;
       utterance.pitch = 1;
       speechSynthesis.speak(utterance);
+      if (analytics)
+        logEvent(analytics, "play_affirmations", { goal_id: selectedGoalId });
     }
   };
 
@@ -734,6 +761,10 @@ function App() {
                         ];
                         newAffirmations[index] = e.target.value;
                         updateDailyEntry("affirmations", newAffirmations);
+                        if (analytics)
+                          logEvent(analytics, "edit_affirmations", {
+                            goal_id: selectedGoalId,
+                          });
                       }}
                       rows={2}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base resize-none"
@@ -1258,6 +1289,7 @@ function App() {
                 onClick={() => {
                   setActiveTab(id);
                   setMobileMenuOpen(false);
+                  if (analytics) logEvent(analytics, "switch_tab", { tab: id });
                 }}
                 className={`flex items-center w-full py-3 px-2 font-medium text-sm transition-colors ${
                   activeTab === id
@@ -1284,7 +1316,10 @@ function App() {
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => {
+                  setActiveTab(id);
+                  if (analytics) logEvent(analytics, "switch_tab", { tab: id });
+                }}
                 className={`flex items-center py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === id
                     ? "border-purple-500 text-purple-600"
@@ -1318,6 +1353,10 @@ function App() {
                 "manifesting-celebrated-goals",
                 JSON.stringify(updated)
               );
+              if (analytics)
+                logEvent(analytics, "complete_all_steps", {
+                  goal_id: selectedGoalId,
+                });
               return updated;
             });
           }
