@@ -14,6 +14,10 @@ import {
   LogOut,
   Menu,
   X,
+  Mic,
+  Pause,
+  Send,
+  Trash2,
 } from "lucide-react";
 import LandingPage from "./components/LandingPage";
 import AuthForm from "./components/AuthForm";
@@ -144,6 +148,328 @@ const Spinner = () => (
     </svg>
   </div>
 );
+
+// VoiceNote component (WhatsApp-style)
+type RecordingState = "idle" | "recording" | "recorded" | "playing";
+const VoiceNote: React.FC<{
+  onSend: (audioBlob: Blob, duration: number) => void;
+  onCancel?: () => void;
+}> = ({ onSend, onCancel }) => {
+  const [state, setState] = useState<RecordingState>("idle");
+  const [duration, setDuration] = useState(0);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioURL, setAudioURL] = useState<string>("");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [waveformBars, setWaveformBars] = useState<number[]>([]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const generateWaveform = () => {
+    const bars = Array.from({ length: 20 }, () => Math.random() * 40 + 10);
+    setWaveformBars(bars);
+  };
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        setAudioURL(URL.createObjectURL(blob));
+        setState("recorded");
+        stream.getTracks().forEach((track) => track.stop());
+      };
+      mediaRecorder.start();
+      setState("recording");
+      setDuration(0);
+      timerRef.current = setInterval(() => {
+        setDuration((prev) => prev + 0.1);
+      }, 100);
+      const animateWaveform = () => {
+        generateWaveform();
+        animationRef.current = requestAnimationFrame(animateWaveform);
+      };
+      animateWaveform();
+    } catch (error) {
+      alert("Error accessing microphone.");
+    }
+  };
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && state === "recording") {
+      mediaRecorderRef.current.stop();
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    }
+  };
+  const cancelRecording = () => {
+    stopRecording();
+    setState("idle");
+    setDuration(0);
+    setAudioBlob(null);
+    setAudioURL("");
+    onCancel?.();
+  };
+  const sendVoiceNote = () => {
+    if (audioBlob) {
+      onSend(audioBlob, duration);
+      setState("idle");
+      setDuration(0);
+      setAudioBlob(null);
+      setAudioURL("");
+    }
+  };
+  const togglePlayback = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleTimeUpdate = () => setPlaybackTime(audio.currentTime);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setPlaybackTime(0);
+      audio.currentTime = 0;
+    };
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [audioURL]);
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (audioURL) URL.revokeObjectURL(audioURL);
+    };
+  }, [audioURL]);
+  const renderWaveform = () => (
+    <div className="flex items-center justify-center space-x-1 h-8">
+      {waveformBars.map((height, index) => (
+        <div
+          key={index}
+          className="bg-green-500 w-1 rounded-full transition-all duration-100"
+          style={{ height: `${height}%` }}
+        />
+      ))}
+    </div>
+  );
+  const renderPlaybackWaveform = () => {
+    const progress = audioRef.current
+      ? playbackTime / audioRef.current.duration || 0
+      : 0;
+    return (
+      <div className="flex items-center justify-center space-x-1 h-6">
+        {Array.from({ length: 15 }, (_, index) => {
+          const isActive = index < progress * 15;
+          return (
+            <div
+              key={index}
+              className={`w-1 rounded-full ${
+                isActive ? "bg-green-500" : "bg-gray-300"
+              }`}
+              style={{ height: `${Math.random() * 20 + 10}px` }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+  if (state === "idle") {
+    return (
+      <div className="flex items-center justify-center">
+        <button
+          onMouseDown={startRecording}
+          onTouchStart={startRecording}
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition-all duration-200 active:scale-95 shadow-lg"
+        >
+          <Mic size={24} />
+        </button>
+      </div>
+    );
+  }
+  if (state === "recording") {
+    return (
+      <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+          <span className="text-red-500 font-medium">
+            {formatTime(duration)}
+          </span>
+        </div>
+        <div className="flex-1">{renderWaveform()}</div>
+        <div className="flex space-x-2">
+          <button
+            onClick={cancelRecording}
+            className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+          >
+            <X size={20} />
+          </button>
+          <button
+            onMouseUp={stopRecording}
+            onTouchEnd={stopRecording}
+            className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200"
+          >
+            <Send size={20} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (state === "recorded") {
+    return (
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={togglePlayback}
+            className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-all duration-200"
+          >
+            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+          </button>
+          <div className="flex-1">{renderPlaybackWaveform()}</div>
+          <span className="text-gray-600 text-sm font-medium">
+            {formatTime(playbackTime)} / {formatTime(duration)}
+          </span>
+          <div className="flex space-x-2">
+            <button
+              onClick={cancelRecording}
+              className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={18} />
+            </button>
+            <button
+              onClick={sendVoiceNote}
+              className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+        {audioURL && <audio ref={audioRef} src={audioURL} className="hidden" />}
+      </div>
+    );
+  }
+  return null;
+};
+
+// Minimal ChatMessage-style playback bubble
+const ChatMessage: React.FC<{
+  audioBlob: Blob;
+  duration: number;
+  timestamp: Date;
+}> = ({ audioBlob, duration, timestamp }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioURL, setAudioURL] = useState<string>("");
+  useEffect(() => {
+    if (audioBlob) {
+      const url = URL.createObjectURL(audioBlob);
+      setAudioURL(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [audioBlob]);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      audio.currentTime = 0;
+    };
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [audioURL]);
+  const togglePlayback = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+  // Animated waveform: 20 bars, animate (color) only during playback
+  const totalBars = 20;
+  const progress =
+    audioRef.current && audioRef.current.duration
+      ? currentTime / audioRef.current.duration
+      : 0;
+  return (
+    <div className="flex justify-end mb-4">
+      <div className="w-72 px-4 py-3 rounded-lg bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-500 text-white shadow-lg">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={togglePlayback}
+            className="p-2 rounded-full bg-white hover:bg-indigo-100 text-purple-600 transition-colors"
+          >
+            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          </button>
+          {/* Waveform */}
+          <div className="flex items-center space-x-0.5 flex-1">
+            {Array.from({ length: totalBars }).map((_, idx) => {
+              // Animate color if playing and bar is before progress
+              const isActive = isPlaying && idx < progress * totalBars;
+              return (
+                <div
+                  key={idx}
+                  className={`w-1 rounded-full transition-colors duration-200 ${
+                    isActive ? "bg-yellow-300" : "bg-indigo-200"
+                  }`}
+                  style={{ height: `${16 + (idx % 2 === 0 ? 8 : 0)}px` }}
+                />
+              );
+            })}
+          </div>
+          <span className="text-xs font-mono text-white ml-2 min-w-[32px] text-right">
+            {isPlaying ? formatTime(currentTime) : formatTime(duration)}
+          </span>
+        </div>
+        <div className="text-xs mt-2 text-indigo-100 text-right">
+          {timestamp.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
+        {audioURL && <audio ref={audioRef} src={audioURL} className="hidden" />}
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const [currentView, setCurrentView] = useState<"landing" | "auth" | "app">(
@@ -635,6 +961,66 @@ function App() {
     }
   };
 
+  // Step 6: Voice Note (local state only)
+  const [todayVoiceNote, setTodayVoiceNote] = useState<Blob | null>(null);
+  const [todayVoiceNoteUrl, setTodayVoiceNoteUrl] = useState<string | null>(
+    null
+  );
+  const [todayVoiceNoteDuration, setTodayVoiceNoteDuration] =
+    useState<number>(0);
+  const [todayVoiceNoteRecording, setTodayVoiceNoteRecording] = useState(false);
+  const [todayVoiceNoteTimer, setTodayVoiceNoteTimer] = useState(0);
+  const [todayVoiceNoteComplete, setTodayVoiceNoteComplete] = useState(false);
+  const [todayVoiceNoteMessage, setTodayVoiceNoteMessage] = useState("");
+  const [todayVoiceNoteTimestamp, setTodayVoiceNoteTimestamp] =
+    useState<Date | null>(null);
+
+  const handleStartVoiceNote = async () => {
+    setTodayVoiceNoteMessage("");
+    setTodayVoiceNote(null);
+    setTodayVoiceNoteUrl(null);
+    setTodayVoiceNoteDuration(0);
+    setTodayVoiceNoteComplete(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new window.MediaRecorder(stream);
+      voiceNoteChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) voiceNoteChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(voiceNoteChunksRef.current, {
+          type: "audio/webm",
+        });
+        setTodayVoiceNote(blob);
+        setTodayVoiceNoteUrl(URL.createObjectURL(blob));
+        setTodayVoiceNoteDuration(todayVoiceNoteTimer);
+        setTodayVoiceNoteComplete(true);
+        setTodayVoiceNoteMessage("Thanks for sharing your day! 🎤");
+      };
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setTodayVoiceNoteRecording(true);
+    } catch (err) {
+      alert("Could not access microphone.");
+    }
+  };
+
+  const handleStopVoiceNote = () => {
+    if (mediaRecorderRef.current && todayVoiceNoteRecording) {
+      mediaRecorderRef.current.stop();
+      setTodayVoiceNoteRecording(false);
+    }
+  };
+
+  const handleDeleteVoiceNote = () => {
+    setTodayVoiceNote(null);
+    setTodayVoiceNoteUrl(null);
+    setTodayVoiceNoteDuration(0);
+    setTodayVoiceNoteComplete(false);
+    setTodayVoiceNoteMessage("");
+  };
+
   if (currentView === "landing") {
     return <LandingPage onGetStarted={() => setCurrentView("auth")} />;
   }
@@ -986,6 +1372,58 @@ function App() {
                     />
                   ))}
                 </div>
+              </div>
+              {/* Step 6: Voice Note */}
+              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-indigo-100 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 mr-3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 18.75v1.5m0 0h3.375m-3.375 0H8.625M12 3v9.75m0 0a3 3 0 01-3 3m3-3a3 3 0 003 3"
+                        />
+                      </svg>
+                    </span>
+                    <h3 className="text-lg sm:text-xl font-semibold text-indigo-800">
+                      6. Reflect on your day (90s max)
+                    </h3>
+                  </div>
+                </div>
+                {!todayVoiceNote && (
+                  <VoiceNote
+                    onSend={(blob, duration) => {
+                      setTodayVoiceNote(blob);
+                      setTodayVoiceNoteDuration(duration);
+                      setTodayVoiceNoteMessage(
+                        "Thanks for sharing your day! 🎤"
+                      );
+                      setTodayVoiceNoteTimestamp(new Date());
+                    }}
+                  />
+                )}
+                {todayVoiceNote && (
+                  <div className="flex flex-col items-center">
+                    <ChatMessage
+                      audioBlob={todayVoiceNote}
+                      duration={todayVoiceNoteDuration}
+                      timestamp={todayVoiceNoteTimestamp || new Date()}
+                    />
+                    <div className="mt-2">
+                      <div className="bg-indigo-100 text-indigo-800 rounded-2xl px-4 py-2 max-w-xs shadow text-sm text-center">
+                        {todayVoiceNoteMessage}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           );
