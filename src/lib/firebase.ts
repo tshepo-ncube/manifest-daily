@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getAnalytics, logEvent } from "firebase/analytics";
+import { getAnalytics, logEvent, Analytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBRLctKtrh8rzQkShOQ0mhmG75yCu13byU",
@@ -19,7 +19,7 @@ const provider = new GoogleAuthProvider();
 const microsoftProvider = new OAuthProvider("microsoft.com");
 const db = getFirestore(firebaseApp);
 
-let analytics;
+let analytics: Analytics | undefined;
 if (typeof window !== "undefined") {
   analytics = getAnalytics(firebaseApp);
 }
