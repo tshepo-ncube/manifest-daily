@@ -896,8 +896,52 @@ function App() {
           Define your aspirations and manifest your dreams
         </p>
       </div>
-      {/* Add New Goal Modal */}
-      {showAddGoalModal && (
+      {/* Show add goal form directly if user has 0 goals */}
+      {goals.length === 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-purple-100">
+          <h3 className="text-lg sm:text-xl font-semibold text-purple-800 mb-4">
+            Add Your First Goal
+          </h3>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Goal title (e.g., 'Launch Successful SaaS Business')"
+              value={newGoal.title}
+              onChange={(e) =>
+                setNewGoal({ ...newGoal, title: e.target.value })
+              }
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+            />
+            <textarea
+              placeholder="Describe your goal in detail... What does success look like?"
+              value={newGoal.description}
+              onChange={(e) =>
+                setNewGoal({ ...newGoal, description: e.target.value })
+              }
+              rows={3}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none"
+            />
+            <input
+              type="date"
+              value={newGoal.endDate}
+              onChange={(e) =>
+                setNewGoal({ ...newGoal, endDate: e.target.value })
+              }
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+              min={new Date().toISOString().split("T")[0]}
+            />
+            <button
+              onClick={addGoal}
+              className="flex items-center bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base"
+            >
+              <Plus size={18} className="mr-2" />
+              Add Goal
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Add New Goal Modal for users with more than 1 goal */}
+      {showAddGoalModal && goals.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md relative">
             <button
