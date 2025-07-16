@@ -194,9 +194,9 @@ const VoiceNote: React.FC<{
       setDuration(0);
       timerRef.current = setInterval(() => {
         setDuration((prev) => {
-          if (prev + 0.1 >= 90) {
+          if (prev + 0.1 >= 30) {
             stopRecording();
-            return 90;
+            return 30;
           }
           return prev + 0.1;
         });
@@ -1184,7 +1184,8 @@ function App() {
                   </button>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Write 3 key actions that move you closer to your goal today:
+                  List 3 key actions for today and visualize yourself doing
+                  them.
                 </p>
                 <div className="space-y-3">
                   {(entry?.visualizations || ["", "", ""]).map((viz, index) => (
@@ -1233,7 +1234,7 @@ function App() {
                   </button>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Write 3 things you're grateful for related to your journey:
+                  Write 3 things you're grateful for related to your journey
                 </p>
                 <div className="space-y-3">
                   {(entry?.gratitudes || ["", "", ""]).map(
@@ -1284,7 +1285,7 @@ function App() {
                   </button>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Write 3 wins from your day:
+                  Write 3 wins from your day
                 </p>
                 <div className="space-y-3 mb-6">
                   {(entry?.wins || ["", "", ""]).map((win, index) => (
@@ -1351,7 +1352,7 @@ function App() {
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                  Calmy say these to yourself at least 5 times today
+                  Calmly say these to yourself at least 5 times today
                 </p>
                 <div className="space-y-3">
                   {(
@@ -1401,7 +1402,7 @@ function App() {
                       </svg>
                     </span>
                     <h3 className="text-lg sm:text-xl font-semibold text-indigo-800">
-                      6. Reflect on your day (90s max)
+                      6. Reflect on your day
                     </h3>
                   </div>
                 </div>
@@ -1984,7 +1985,7 @@ function App() {
   const renderSupport = () => (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <h2 className="text-2xl font-bold mb-4 text-purple-700">
-        Support & Feedback
+        Support, Feedback & Feature Request
       </h2>
       <p className="text-gray-600 mb-4">
         Submit a ticket, rate the app, or upload a screenshot/image.
