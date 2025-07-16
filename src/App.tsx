@@ -18,7 +18,9 @@ import {
 import LandingPage from "./components/LandingPage";
 import AuthForm from "./components/AuthForm";
 import CelebrationModal from "./components/CelebrationModal";
-import { db, analytics, logEvent } from "./lib/firebase";
+import { db, analytics as rawAnalytics, logEvent } from "./lib/firebase";
+import type { Analytics } from "firebase/analytics";
+const analytics: Analytics | undefined = rawAnalytics;
 import {
   collection,
   addDoc,
@@ -155,9 +157,15 @@ function App() {
   const [celebratedGoals, setCelebratedGoals] = useState<{
     [goalId: string]: string;
   }>(() => {
-    // Try to load from localStorage for persistence
-    const stored = localStorage.getItem("manifesting-celebrated-goals");
-    return stored ? JSON.parse(stored) : {};
+    const storedUser = localStorage.getItem("manifesting-user");
+    const userId = storedUser ? JSON.parse(storedUser).id : undefined;
+    if (userId) {
+      const stored = localStorage.getItem(
+        `manifesting-celebrated-goals-${userId}`
+      );
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -175,6 +183,8 @@ function App() {
     Record<string, boolean>
   >({});
   const [loadingData, setLoadingData] = useState(false);
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const today = new Date().toDateString();
   const todayEntry = dailyEntries.find(
@@ -262,11 +272,41 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayEntry, selectedGoalId, celebratedGoals, today]);
 
+  // On user change, load celebratedGoals from the correct key
+  useEffect(() => {
+    setGoals([]);
+    setDailyEntries([]);
+    setSelectedGoalId("");
+    if (user && user.id) {
+      const stored = localStorage.getItem(
+        `manifesting-celebrated-goals-${user.id}`
+      );
+      setCelebratedGoals(stored ? JSON.parse(stored) : {});
+    } else {
+      setCelebratedGoals({});
+    }
+    if (user) setLoadingData(true);
+  }, [user]);
+
   const handleSignOut = async () => {
+    setSigningOut(true);
     if (analytics) logEvent(analytics, "logout");
+    const userId = user?.id;
     localStorage.removeItem("manifesting-user");
-    setUser(null);
-    setCurrentView("landing");
+    if (userId) {
+      localStorage.removeItem(`manifesting-goals-${userId}`);
+      localStorage.removeItem(`manifesting-entries-${userId}`);
+      // Do not remove celebratedGoals for the current user on sign out
+    }
+    setGoals([]);
+    setDailyEntries([]);
+    setSelectedGoalId("");
+    setCelebratedGoals({});
+    setTimeout(() => {
+      setCurrentView("landing");
+      setUser(null);
+      setSigningOut(false);
+    }, 1000); // Give time for UI to update
   };
 
   const addGoal = async () => {
@@ -477,8 +517,22 @@ function App() {
     return (
       <AuthForm
         onBack={() => setCurrentView("landing")}
-        onAuthSuccess={() => setCurrentView("app")}
+        onAuthSuccess={() => {
+          setCurrentView("app");
+          window.location.reload(); // Hard refresh after login
+        }}
       />
+    );
+  }
+
+  if (signingOut) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+        <Spinner />
+        <p className="mt-6 text-lg text-gray-700 font-semibold">
+          Signing out...
+        </p>
+      </div>
     );
   }
 
@@ -842,48 +896,74 @@ function App() {
           Define your aspirations and manifest your dreams
         </p>
       </div>
-
-      {/* Add New Goal */}
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-purple-100">
-        <h3 className="text-lg sm:text-xl font-semibold text-purple-800 mb-4">
-          Add New Goal
-        </h3>
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Goal title (e.g., 'Launch Successful SaaS Business')"
-            value={newGoal.title}
-            onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
-          />
-          <textarea
-            placeholder="Describe your goal in detail... What does success look like?"
-            value={newGoal.description}
-            onChange={(e) =>
-              setNewGoal({ ...newGoal, description: e.target.value })
-            }
-            rows={3}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none"
-          />
-          <input
-            type="date"
-            value={newGoal.endDate}
-            onChange={(e) =>
-              setNewGoal({ ...newGoal, endDate: e.target.value })
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
-            min={new Date().toISOString().split("T")[0]}
-          />
-          <button
-            onClick={addGoal}
-            className="flex items-center bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base"
-          >
-            <Plus size={18} className="mr-2" />
-            Add Goal
-          </button>
+      {/* Add New Goal Modal */}
+      {showAddGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md relative">
+            <button
+              onClick={() => setShowAddGoalModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <h3 className="text-xl font-bold mb-4 text-gray-800">
+              Add New Goal
+            </h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Goal title (e.g., 'Launch Successful SaaS Business')"
+                value={newGoal.title}
+                onChange={(e) =>
+                  setNewGoal({ ...newGoal, title: e.target.value })
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+              />
+              <textarea
+                placeholder="Describe your goal in detail... What does success look like?"
+                value={newGoal.description}
+                onChange={(e) =>
+                  setNewGoal({ ...newGoal, description: e.target.value })
+                }
+                rows={3}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none"
+              />
+              <input
+                type="date"
+                value={newGoal.endDate}
+                onChange={(e) =>
+                  setNewGoal({ ...newGoal, endDate: e.target.value })
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                min={new Date().toISOString().split("T")[0]}
+              />
+              <button
+                onClick={async () => {
+                  await addGoal();
+                  setShowAddGoalModal(false);
+                }}
+                className="flex items-center bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base"
+              >
+                <Plus size={18} className="mr-2" />
+                Add Goal
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
+      )}
       {/* Goals List */}
       <div className="grid gap-6">
         {goals
@@ -953,6 +1033,16 @@ function App() {
             </div>
           ))}
       </div>
+      {/* FAB for adding new goal, only if user has more than one goal */}
+      {goals.length > 1 && (
+        <button
+          onClick={() => setShowAddGoalModal(true)}
+          className="fixed bottom-16 right-12 z-50 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg w-16 h-16 flex items-center justify-center text-3xl focus:outline-none focus:ring-4 focus:ring-purple-300"
+          title="Add New Goal"
+        >
+          <Plus size={32} />
+        </button>
+      )}
       {editingGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md relative">
@@ -1380,11 +1470,11 @@ function App() {
         isOpen={showCelebration}
         onClose={() => {
           setShowCelebration(false);
-          if (selectedGoalId) {
+          if (selectedGoalId && user && user.id) {
             setCelebratedGoals((prev) => {
               const updated = { ...prev, [selectedGoalId]: today };
               localStorage.setItem(
-                "manifesting-celebrated-goals",
+                `manifesting-celebrated-goals-${user.id}`,
                 JSON.stringify(updated)
               );
               if (analytics)
