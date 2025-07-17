@@ -273,7 +273,7 @@ const VoiceNote: React.FC<{
     };
   }, [audioURL]);
   const renderWaveform = () => (
-    <div className="flex items-center justify-center space-x-1 h-8">
+    <div className="flex items-center justify-center space-x-1 h-8 min-w-0 flex-1 overflow-x-auto">
       {waveformBars.map((height, index) => (
         <div
           key={index}
@@ -288,7 +288,7 @@ const VoiceNote: React.FC<{
       ? playbackTime / audioRef.current.duration || 0
       : 0;
     return (
-      <div className="flex items-center justify-center space-x-1 h-6">
+      <div className="flex items-center justify-center space-x-1 h-6 min-w-0 flex-1 overflow-x-auto">
         {Array.from({ length: 15 }, (_, index) => {
           const isActive = index < progress * 15;
           return (
@@ -306,11 +306,11 @@ const VoiceNote: React.FC<{
   };
   if (state === "idle") {
     return (
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center w-full">
         <button
           onMouseDown={startRecording}
           onTouchStart={startRecording}
-          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition-all duration-200 active:scale-95 shadow-lg"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 sm:p-5 rounded-full transition-all duration-200 active:scale-95 shadow-lg"
         >
           <Mic size={24} />
         </button>
@@ -319,15 +319,15 @@ const VoiceNote: React.FC<{
   }
   if (state === "recording") {
     return (
-      <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row items-center w-full max-w-xs sm:max-w-md p-2 sm:p-4 rounded-lg bg-gray-50">
+        <div className="flex items-center space-x-2 mb-2 sm:mb-0">
           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-red-500 font-medium">
+          <span className="text-red-500 font-medium text-base sm:text-lg">
             {formatTime(duration)}
           </span>
         </div>
-        <div className="flex-1">{renderWaveform()}</div>
-        <div className="flex space-x-2">
+        <div className="flex-1 min-w-0">{renderWaveform()}</div>
+        <div className="flex space-x-2 mt-2 sm:mt-0">
           <button
             onClick={cancelRecording}
             className="p-2 text-gray-500 hover:text-red-500 transition-colors"
@@ -347,16 +347,16 @@ const VoiceNote: React.FC<{
   }
   if (state === "recorded") {
     return (
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="flex items-center space-x-4">
+      <div className="bg-gray-50 p-2 sm:p-4 rounded-lg w-full max-w-xs sm:max-w-md">
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <button
             onClick={togglePlayback}
-            className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-all duration-200"
+            className="bg-green-500 hover:bg-green-600 text-white p-3 sm:p-4 rounded-full transition-all duration-200"
           >
             {isPlaying ? <Pause size={20} /> : <Play size={20} />}
           </button>
-          <div className="flex-1">{renderPlaybackWaveform()}</div>
-          <span className="text-gray-600 text-sm font-medium">
+          <div className="flex-1 min-w-0">{renderPlaybackWaveform()}</div>
+          <span className="text-gray-600 text-sm font-medium whitespace-nowrap">
             {formatTime(playbackTime)} / {formatTime(duration)}
           </span>
           <div className="flex space-x-2">
@@ -436,9 +436,9 @@ const ChatMessage: React.FC<{
       ? currentTime / audioRef.current.duration
       : 0;
   return (
-    <div className="flex justify-end mb-4">
-      <div className="w-72 px-4 py-3 rounded-lg bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-500 text-white shadow-lg">
-        <div className="flex items-center space-x-3">
+    <div className="flex justify-end mb-4 w-full">
+      <div className="w-full max-w-xs sm:max-w-md px-2 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-500 text-white shadow-lg">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={togglePlayback}
             className="p-2 rounded-full bg-white hover:bg-indigo-100 text-purple-600 transition-colors"
@@ -446,7 +446,7 @@ const ChatMessage: React.FC<{
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
           </button>
           {/* Waveform */}
-          <div className="flex items-center space-x-0.5 flex-1">
+          <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-x-auto">
             {Array.from({ length: totalBars }).map((_, idx) => {
               // Animate color if playing and bar is before progress
               const isActive = isPlaying && idx < progress * totalBars;
