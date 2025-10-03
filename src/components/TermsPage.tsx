@@ -32,7 +32,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
     },
     {
       title: "5. Privacy and Data Protection",
-      content: `Your privacy is important to us. Our Privacy Policy explains how we collect, use, and protect your information when you use our Service. By using our Service, you agree to the collection and use of information in accordance with our Privacy Policy. We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.`,
+      content: `Your privacy is important to us. Our Privacy Policy explains how we collect, use, and protect your information when you use our Service. By using our Service, you agree to the collection and use of information in accordance with our Privacy Policy. We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. For detailed information about our privacy practices, please review our Privacy Policy.`,
     },
     {
       title: "6. Intellectual Property Rights",
@@ -43,27 +43,31 @@ export default function TermsPage({ onBack }: TermsPageProps) {
       content: `Some features of the Service are provided on a subscription basis. Subscription fees are billed in advance on a monthly or annual basis and are non-refundable except as required by law. You may cancel your subscription at any time through your account settings. Cancellation will take effect at the end of your current billing period.`,
     },
     {
-      title: "8. Disclaimers and Limitations of Liability",
+      title: "8. Refund Policy",
+      content: `We offer a 30-day money-back guarantee for all paid subscription plans (Premium and Master). If you are not satisfied with our Service within the first 30 days of your subscription, you may request a full refund by contacting our support team at support@manifestdaily.com. Refund requests must be submitted within 30 days of the initial subscription purchase. Refunds will be processed within 5-10 business days to the original payment method. Free plan users are not eligible for refunds as no payment is required. Refunds are not available for partial months or unused portions of subscription periods after the initial 30-day guarantee period. We reserve the right to refuse refunds in cases of abuse, fraud, or violation of these Terms of Service.`,
+    },
+    {
+      title: "9. Disclaimers and Limitations of Liability",
       content: `THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS. WE EXPRESSLY DISCLAIM ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.`,
     },
     {
-      title: "9. Indemnification",
+      title: "10. Indemnification",
       content: `You agree to defend, indemnify, and hold harmless Manifest Daily and its licensee and licensors, and their employees, contractors, agents, officers and directors, from and against any and all claims, damages, obligations, losses, liabilities, costs or debt, and expenses (including but not limited to attorney's fees).`,
     },
     {
-      title: "10. Termination",
+      title: "11. Termination",
       content: `We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, under our sole discretion, for any reason whatsoever and without limitation, including but not limited to a breach of the Terms. If you wish to terminate your account, you may simply discontinue using the Service.`,
     },
     {
-      title: "11. Governing Law",
+      title: "12. Governing Law",
       content: `These Terms shall be interpreted and governed by the laws of the United States, without regard to its conflict of law provisions. Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.`,
     },
     {
-      title: "12. Changes to Terms",
+      title: "13. Changes to Terms",
       content: `We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.`,
     },
     {
-      title: "13. Contact Information",
+      title: "14. Contact Information",
       content: `If you have any questions about these Terms of Service, please contact us at legal@manifestdaily.com or through our support system within the application.`,
     },
   ];

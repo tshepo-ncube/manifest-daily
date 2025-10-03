@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
   Target,
@@ -24,6 +25,7 @@ import AuthForm from "./components/AuthForm";
 import CelebrationModal from "./components/CelebrationModal";
 import PricingPage from "./components/PricingPage";
 import TermsPage from "./components/TermsPage";
+import PrivacyPage from "./components/PrivacyPage";
 import { db, analytics as rawAnalytics, logEvent } from "./lib/firebase";
 import {
   collection,
@@ -474,9 +476,11 @@ const ChatMessage: React.FC<{
 };
 
 function App() {
-  const [currentView, setCurrentView] = useState<
-    "landing" | "auth" | "app" | "pricing" | "terms"
-  >("landing");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [currentView, setCurrentView] = useState<"landing" | "auth" | "app">(
+    "landing"
+  );
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("today");
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -978,22 +982,17 @@ function App() {
 
   // Voice note functions removed as they were causing errors and are not used in the current implementation
 
-  if (currentView === "landing") {
-    return (
-      <LandingPage
-        onGetStarted={() => setCurrentView("auth")}
-        onViewPricing={() => setCurrentView("pricing")}
-        onViewTerms={() => setCurrentView("terms")}
-      />
-    );
+  // Handle routing based on URL path
+  if (location.pathname === "/pricing") {
+    return <PricingPage onBack={() => navigate("/")} />;
   }
 
-  if (currentView === "pricing") {
-    return <PricingPage onBack={() => setCurrentView("landing")} />;
+  if (location.pathname === "/terms") {
+    return <TermsPage onBack={() => navigate("/")} />;
   }
 
-  if (currentView === "terms") {
-    return <TermsPage onBack={() => setCurrentView("landing")} />;
+  if (location.pathname === "/privacy") {
+    return <PrivacyPage onBack={() => navigate("/")} />;
   }
 
   if (currentView === "auth") {
@@ -1004,6 +1003,30 @@ function App() {
           setCurrentView("app");
           window.location.reload(); // Hard refresh after login
         }}
+      />
+    );
+  }
+
+  // Default route - show landing page
+  if (location.pathname === "/" && currentView === "landing") {
+    return (
+      <LandingPage
+        onGetStarted={() => setCurrentView("auth")}
+        onViewPricing={() => navigate("/pricing")}
+        onViewTerms={() => navigate("/terms")}
+        onViewPrivacy={() => navigate("/privacy")}
+      />
+    );
+  }
+
+  // Show landing page for any other routes when not authenticated
+  if (currentView === "landing") {
+    return (
+      <LandingPage
+        onGetStarted={() => setCurrentView("auth")}
+        onViewPricing={() => navigate("/pricing")}
+        onViewTerms={() => navigate("/terms")}
+        onViewPrivacy={() => navigate("/privacy")}
       />
     );
   }

@@ -15,12 +15,14 @@ interface LandingPageProps {
   onGetStarted: () => void;
   onViewPricing: () => void;
   onViewTerms: () => void;
+  onViewPrivacy: () => void;
 }
 
 export default function LandingPage({
   onGetStarted,
   onViewPricing,
   onViewTerms,
+  onViewPrivacy,
 }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -57,6 +59,12 @@ export default function LandingPage({
                 >
                   Terms
                 </button>
+                <button
+                  onClick={onViewPrivacy}
+                  className="text-white/70 hover:text-white transition-colors font-medium"
+                >
+                  Privacy
+                </button>
               </div>
 
               {/* Mobile menu button */}
@@ -92,6 +100,15 @@ export default function LandingPage({
                   className="text-white/70 hover:text-white transition-colors font-medium text-left py-2"
                 >
                   Terms
+                </button>
+                <button
+                  onClick={() => {
+                    onViewPrivacy();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-white/70 hover:text-white transition-colors font-medium text-left py-2"
+                >
+                  Privacy
                 </button>
               </div>
             </div>

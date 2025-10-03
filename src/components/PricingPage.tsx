@@ -349,7 +349,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 {
                   question: "Can I get a refund?",
                   answer:
-                    "We offer a 30-day money-back guarantee for all paid plans. If you're not satisfied, we'll refund your payment.",
+                    "We offer a 30-day money-back guarantee for all paid subscription plans (Premium and Master). If you're not satisfied within the first 30 days, contact our support team for a full refund. Refunds are processed within 5-10 business days to your original payment method.",
                 },
                 {
                   question: "Is my data secure?",
