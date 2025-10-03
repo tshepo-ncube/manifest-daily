@@ -22,6 +22,8 @@ import {
 import LandingPage from "./components/LandingPage";
 import AuthForm from "./components/AuthForm";
 import CelebrationModal from "./components/CelebrationModal";
+import PricingPage from "./components/PricingPage";
+import TermsPage from "./components/TermsPage";
 import { db, analytics as rawAnalytics, logEvent } from "./lib/firebase";
 import {
   collection,
@@ -32,16 +34,10 @@ import {
   Timestamp,
   setDoc,
   doc,
-  orderBy,
   updateDoc,
 } from "firebase/firestore";
 import type { Analytics } from "firebase/analytics";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadString,
-  getDownloadURL,
-} from "firebase/storage";
+// Firebase storage imports removed as they're not used
 const analytics: Analytics | undefined = rawAnalytics;
 
 interface Goal {
@@ -478,9 +474,9 @@ const ChatMessage: React.FC<{
 };
 
 function App() {
-  const [currentView, setCurrentView] = useState<"landing" | "auth" | "app">(
-    "landing"
-  );
+  const [currentView, setCurrentView] = useState<
+    "landing" | "auth" | "app" | "pricing" | "terms"
+  >("landing");
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("today");
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -792,11 +788,11 @@ function App() {
       if (field in existingEntry.completed) {
         updatedEntry.completed = {
           ...existingEntry.completed,
-          [field]: Boolean(
+          [field as keyof typeof existingEntry.completed]: Boolean(
             value &&
               (typeof value === "string"
                 ? value.trim()
-                : value.length
+                : Array.isArray(value) && value.length
                 ? value.some((v: any) => v)
                 : value)
           ),
@@ -831,7 +827,7 @@ function App() {
           });
       }
     } else {
-      const user = JSON.parse(localStorage.getItem("manifesting-user") || "{}");
+      // User data is already available in the component state
       // Only set completed for the field being filled
       const completed = {
         intention: false,
@@ -841,11 +837,11 @@ function App() {
         affirmations: false,
       };
       if (field in completed) {
-        completed[field] = Boolean(
+        completed[field as keyof typeof completed] = Boolean(
           value &&
             (typeof value === "string"
               ? value.trim()
-              : value.length
+              : Array.isArray(value) && value.length
               ? value.some((v: any) => v)
               : value)
         );
@@ -871,7 +867,10 @@ function App() {
           goal_id: selectedGoalId,
           field,
         });
-      if (field === "completed" && Object.values(completed).every(Boolean)) {
+      if (
+        field === "completed" &&
+        Object.values(completed).every((val) => val === true)
+      ) {
         const withCompletedAt = {
           ...newEntry,
           completedAt: new Date().toISOString(),
@@ -891,13 +890,15 @@ function App() {
   };
 
   const toggleCompleted = (step: keyof DailyEntry["completed"]) => {
-    const completed = { ...todayEntry?.completed } || {
-      intention: false,
-      visualization: false,
-      gratitude: false,
-      reflection: false,
-      affirmations: false,
-    };
+    const completed = todayEntry?.completed
+      ? { ...todayEntry.completed }
+      : {
+          intention: false,
+          visualization: false,
+          gratitude: false,
+          reflection: false,
+          affirmations: false,
+        };
     completed[step] = !completed[step];
     updateDailyEntry("completed", completed);
   };
@@ -969,66 +970,30 @@ function App() {
 
   // Step 6: Voice Note (local state only)
   const [todayVoiceNote, setTodayVoiceNote] = useState<Blob | null>(null);
-  const [todayVoiceNoteUrl, setTodayVoiceNoteUrl] = useState<string | null>(
-    null
-  );
   const [todayVoiceNoteDuration, setTodayVoiceNoteDuration] =
     useState<number>(0);
-  const [todayVoiceNoteRecording, setTodayVoiceNoteRecording] = useState(false);
-  const [todayVoiceNoteTimer, setTodayVoiceNoteTimer] = useState(0);
-  const [todayVoiceNoteComplete, setTodayVoiceNoteComplete] = useState(false);
   const [todayVoiceNoteMessage, setTodayVoiceNoteMessage] = useState("");
   const [todayVoiceNoteTimestamp, setTodayVoiceNoteTimestamp] =
     useState<Date | null>(null);
 
-  const handleStartVoiceNote = async () => {
-    setTodayVoiceNoteMessage("");
-    setTodayVoiceNote(null);
-    setTodayVoiceNoteUrl(null);
-    setTodayVoiceNoteDuration(0);
-    setTodayVoiceNoteComplete(false);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new window.MediaRecorder(stream);
-      voiceNoteChunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) voiceNoteChunksRef.current.push(e.data);
-      };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(voiceNoteChunksRef.current, {
-          type: "audio/webm",
-        });
-        setTodayVoiceNote(blob);
-        setTodayVoiceNoteUrl(URL.createObjectURL(blob));
-        setTodayVoiceNoteDuration(todayVoiceNoteTimer);
-        setTodayVoiceNoteComplete(true);
-        setTodayVoiceNoteMessage("Thanks for sharing your day! 🎤");
-      };
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setTodayVoiceNoteRecording(true);
-    } catch (err) {
-      alert("Could not access microphone.");
-    }
-  };
-
-  const handleStopVoiceNote = () => {
-    if (mediaRecorderRef.current && todayVoiceNoteRecording) {
-      mediaRecorderRef.current.stop();
-      setTodayVoiceNoteRecording(false);
-    }
-  };
-
-  const handleDeleteVoiceNote = () => {
-    setTodayVoiceNote(null);
-    setTodayVoiceNoteUrl(null);
-    setTodayVoiceNoteDuration(0);
-    setTodayVoiceNoteComplete(false);
-    setTodayVoiceNoteMessage("");
-  };
+  // Voice note functions removed as they were causing errors and are not used in the current implementation
 
   if (currentView === "landing") {
-    return <LandingPage onGetStarted={() => setCurrentView("auth")} />;
+    return (
+      <LandingPage
+        onGetStarted={() => setCurrentView("auth")}
+        onViewPricing={() => setCurrentView("pricing")}
+        onViewTerms={() => setCurrentView("terms")}
+      />
+    );
+  }
+
+  if (currentView === "pricing") {
+    return <PricingPage onBack={() => setCurrentView("landing")} />;
+  }
+
+  if (currentView === "terms") {
+    return <TermsPage onBack={() => setCurrentView("landing")} />;
   }
 
   if (currentView === "auth") {

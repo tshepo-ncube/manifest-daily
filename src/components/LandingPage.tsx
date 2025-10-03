@@ -1,11 +1,29 @@
-import React from 'react';
-import { Sparkles, Target, Heart, TrendingUp, CheckCircle, Star, ArrowRight } from 'lucide-react';
+import { useState } from "react";
+import {
+  Sparkles,
+  Target,
+  Heart,
+  TrendingUp,
+  CheckCircle,
+  Star,
+  ArrowRight,
+  Menu,
+  X,
+} from "lucide-react";
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onViewPricing: () => void;
+  onViewTerms: () => void;
 }
 
-export default function LandingPage({ onGetStarted }: LandingPageProps) {
+export default function LandingPage({
+  onGetStarted,
+  onViewPricing,
+  onViewTerms,
+}: LandingPageProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white overflow-hidden">
       {/* Animated background elements */}
@@ -25,8 +43,60 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 Manifest Daily
               </h1>
             </div>
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-6">
+                <button
+                  onClick={onViewPricing}
+                  className="text-white/70 hover:text-white transition-colors font-medium"
+                >
+                  Pricing
+                </button>
+                <button
+                  onClick={onViewTerms}
+                  className="text-white/70 hover:text-white transition-colors font-medium"
+                >
+                  Terms
+                </button>
+              </div>
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="sm:hidden p-2 text-white/70 hover:text-white transition-colors"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
           </div>
         </header>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden bg-white/10 backdrop-blur-lg border-b border-white/20">
+            <div className="px-4 py-4">
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={() => {
+                    onViewPricing();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-white/70 hover:text-white transition-colors font-medium text-left py-2"
+                >
+                  Pricing
+                </button>
+                <button
+                  onClick={() => {
+                    onViewTerms();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-white/70 hover:text-white transition-colors font-medium text-left py-2"
+                >
+                  Terms
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section */}
         <section className="px-4 py-12 sm:px-6 lg:px-8">
@@ -39,7 +109,8 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 </span>
               </h2>
               <p className="text-xl sm:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-                Follow a proven 5-step daily manifestation process to achieve your goals with intention, gratitude, and focused action.
+                Follow a proven 5-step daily manifestation process to achieve
+                your goals with intention, gratitude, and focused action.
               </p>
             </div>
 
@@ -61,56 +132,68 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             <h3 className="text-3xl sm:text-4xl font-bold text-center mb-12 animate-fade-in">
               Your Daily Manifestation Process
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
                 {
                   icon: Target,
                   title: "Set Clear Intentions",
-                  description: "Start each morning by writing your goals as if they're already happening",
-                  color: "from-orange-400 to-red-400"
+                  description:
+                    "Start each morning by writing your goals as if they're already happening",
+                  color: "from-orange-400 to-red-400",
                 },
                 {
                   icon: CheckCircle,
                   title: "Visualize Daily Actions",
-                  description: "Plan 3 key actions that move you closer to your dreams today",
-                  color: "from-blue-400 to-cyan-400"
+                  description:
+                    "Plan 3 key actions that move you closer to your dreams today",
+                  color: "from-blue-400 to-cyan-400",
                 },
                 {
                   icon: Heart,
                   title: "Practice Gratitude",
-                  description: "Build positivity and resilience with daily gratitude journaling",
-                  color: "from-green-400 to-emerald-400"
+                  description:
+                    "Build positivity and resilience with daily gratitude journaling",
+                  color: "from-green-400 to-emerald-400",
                 },
                 {
                   icon: TrendingUp,
                   title: "Reflect on Progress",
-                  description: "Celebrate wins and learn from challenges every evening",
-                  color: "from-purple-400 to-pink-400"
+                  description:
+                    "Celebrate wins and learn from challenges every evening",
+                  color: "from-purple-400 to-pink-400",
                 },
                 {
                   icon: Sparkles,
                   title: "Powerful Affirmations",
-                  description: "Reinforce your confidence with personalized affirmations",
-                  color: "from-indigo-400 to-purple-400"
+                  description:
+                    "Reinforce your confidence with personalized affirmations",
+                  color: "from-indigo-400 to-purple-400",
                 },
                 {
                   icon: Star,
                   title: "Track Your Journey",
-                  description: "Watch your progress unfold with beautiful visualizations",
-                  color: "from-yellow-400 to-orange-400"
-                }
+                  description:
+                    "Watch your progress unfold with beautiful visualizations",
+                  color: "from-yellow-400 to-orange-400",
+                },
               ].map((feature, index) => (
                 <div
                   key={index}
                   className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 animate-slide-up"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4`}>
+                  <div
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4`}
+                  >
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="text-xl font-semibold mb-3">{feature.title}</h4>
-                  <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+                  <h4 className="text-xl font-semibold mb-3">
+                    {feature.title}
+                  </h4>
+                  <p className="text-gray-300 leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -125,7 +208,9 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 Ready to Manifest Your Dreams?
               </h3>
               <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Join thousands who have transformed their lives through consistent daily practice. Your journey to success starts with a single step.
+                Join thousands who have transformed their lives through
+                consistent daily practice. Your journey to success starts with a
+                single step.
               </p>
               <button
                 onClick={onGetStarted}
