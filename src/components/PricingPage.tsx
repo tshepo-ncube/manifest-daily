@@ -74,7 +74,6 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       borderColor: "border-yellow-200",
       features: [
         "Everything in Premium",
-        "1-on-1 manifestation coaching calls",
         "Personalized manifestation plans",
         "Advanced AI insights & recommendations",
         "Exclusive mastermind community",
